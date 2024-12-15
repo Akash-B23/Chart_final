@@ -1,0 +1,15 @@
+.header {
+  background-color: #1e1e1e;
+  padding: 3px 20px;
+  color: #90caf9;
+  border-bottom: 2px solid #252525;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+#logo{
+  height: 50px;
+  margin-left: 20px;
+}
