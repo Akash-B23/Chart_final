@@ -21,9 +21,9 @@ app.use("/api", creditsDisplayRoutes);
 // eslint-disable-next-line no-unused-vars
 const pool = new Pool({
   host: "localhost",
-  user: "postgres",
-  password: "arjuncoc101",
-  database: "curriculum",
+  user: "dinesh",
+  password: "dinesh123",
+  database: "dinesh",
   port: 5432,
 });
 

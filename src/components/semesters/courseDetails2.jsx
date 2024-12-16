@@ -1,6 +1,7 @@
-/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 import "./courseDetails.css";
 
 const CourseDetails = ({ department, regulation }) => {
@@ -8,26 +9,24 @@ const CourseDetails = ({ department, regulation }) => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState({}); // Object to track each dropdown state
 
   const departments = [
-    "CSE",
-    "AIML",
-    "AIDS",
-    "IT",
-    "CSBS",
-    "CYS",
-    "ECE",
-    "EEE",
-    "ACT",
-    "VLSI",
-    "MECH",
-    "MCT",
-    "CIVIL",
-    "BIOMED",
+    { value: "CSE", label: "CSE" },
+    { value: "AIML", label: "AIML" },
+    { value: "AIDS", label: "AIDS" },
+    { value: "IT", label: "IT" },
+    { value: "CSBS", label: "CSBS" },
+    { value: "CYS", label: "CYS" },
+    { value: "ECE", label: "ECE" },
+    { value: "EEE", label: "EEE" },
+    { value: "ACT", label: "ACT" },
+    { value: "VLSI", label: "VLSI" },
+    { value: "MECH", label: "MECH" },
+    { value: "MCT", label: "MCT" },
+    { value: "CIVIL", label: "CIVIL" },
+    { value: "BIOMED", label: "BIOMED" },
   ];
 
-  // This will store the courses in localStorage under the key `courses-semester-{semester}`
   const getStoredCourses = () => {
     const storedCourses = localStorage.getItem(`courses-semester-${semester}`);
     return storedCourses ? JSON.parse(storedCourses) : null;
@@ -39,7 +38,6 @@ const CourseDetails = ({ department, regulation }) => {
       setError(null);
       const storedCourses = getStoredCourses();
 
-      // If data is available in localStorage, load it; else, fetch from the server
       if (storedCourses) {
         setCourses(storedCourses);
         setLoading(false);
@@ -145,8 +143,12 @@ const CourseDetails = ({ department, regulation }) => {
   const handleChange = (index, field, value) => {
     const updatedCourses = [...courses];
     updatedCourses[index][field] = value;
+    if (field === "gate_common" && (value === "Common" || value === "Both")) {
+      updatedCourses[index]["common_dept"] = [];
+    } else if (field === "gate_common") {
+      updatedCourses[index]["common_dept"] = [];
+    }
     setCourses(updatedCourses);
-    // Store the updated courses in localStorage immediately
     localStorage.setItem(
       `courses-semester-${semester}`,
       JSON.stringify(updatedCourses)
@@ -156,32 +158,25 @@ const CourseDetails = ({ department, regulation }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Ensure courses state is correctly updated
-    const updatedCourses = courses.map((course) => ({
-      ...course,
-      common_dept: course.common_dept || [], // Handle empty common_dept fields
-    }));
-    // Calculate total credits
     const totalCredits = courses.reduce(
       (sum, course) => sum + (parseFloat(course.credits) || 0),
       0
     );
 
-    // Check if total credits are less than or equal to 26
     if (totalCredits > 26) {
       alert("Total credits exceed 26. Please adjust the course credits.");
       return;
     }
+
     try {
       const response = await fetch("http://localhost:5000/semester-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courses: updatedCourses }),
+        body: JSON.stringify({ courses }),
       });
 
       if (response.ok) {
         alert("Courses submitted successfully!");
-        // Clear the stored courses after successful submission
         localStorage.removeItem(`courses-semester-${semester}`);
       } else {
         alert("Failed to submit courses.");
@@ -191,161 +186,171 @@ const CourseDetails = ({ department, regulation }) => {
     }
   };
 
-  const handleCheckboxChange = (index, department) => {
-    const updatedCourses = [...courses];
-    const currentDepartments = updatedCourses[index].common_dept || [];
-    updatedCourses[index].common_dept = currentDepartments.includes(department)
-      ? currentDepartments.filter((d) => d !== department)
-      : [...currentDepartments, department];
-    setCourses(updatedCourses);
-    // Store the updated courses in localStorage immediately
-    localStorage.setItem(
-      `courses-semester-${semester}`,
-      JSON.stringify(updatedCourses)
-    );
-  };
-
-  const toggleDropdown = (index) => {
-    setDropdownOpen((prevState) => ({
-      ...prevState,
-      [index]: !prevState[index], // Toggle the dropdown visibility for the clicked index
-    }));
-  };
-
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
+
+  const customStyles = {
+    control: (base) => ({
+      ...base,
+      backgroundColor: "#f9f9f9", // Matches the table background
+    }),
+    menu: (base) => ({
+      ...base,
+      backgroundColor: "#f9f9f9", // Matches the table background
+      color: "#333", // Ensures text is visible
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? "#d0ebff" : state.isFocused ? "#e9f5ff" : "#f9f9f9", // Highlighting for selected and focused options
+      color: state.isSelected ? "#0056b3" : "#333", // Text color for selected and non-selected options
+    }),
+    multiValue: (base) => ({
+      ...base,
+      backgroundColor: "#e3f2fd", // Background color for selected values
+      color: "#333",
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: "#333", // Text color for selected value labels
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: "#333",
+      ":hover": {
+        backgroundColor: "#ffebee",
+        color: "#d32f2f",
+      },
+    }),
+  };
+
 
   return (
     <div className="semester-container">
       <h2 className="semester-header">Semester {semester} - Course Details</h2>
-      <div className="form-container">
-        {courses.map((course, index) => (
-          <div key={index} className="course-row">
-            <h3 className="course-header">Course {course.sno}</h3>
-            <form className="form-grid">
-              <div className="form-group">
-                <label>Sno</label>
-                <input type="text" value={course.sno} readOnly />
-              </div>
-              <div className="form-group">
-                <label>Course Code</label>
-                <input
-                  type="text"
-                  placeholder="Course Code"
-                  value={course.course_code}
-                  onChange={(e) =>
-                    handleChange(index, "course_code", e.target.value)
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Course Name</label>
-                <input
-                  type="text"
-                  placeholder="Course Name"
-                  value={course.course_name}
-                  onChange={(e) =>
-                    handleChange(index, "course_name", e.target.value)
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select
-                  value={course.category}
-                  onChange={(e) =>
-                    handleChange(index, "category", e.target.value)
-                  }
-                >
-                  <option value="">Select Category</option>
-                  <option value="HSMC">HSMC</option>
-                  <option value="BSC">BSC</option>
-                  <option value="ESC">ESC</option>
-                  <option value="PCC">PCC</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>T/P</label>
-                <select
-                  value={course.tp}
-                  onChange={(e) => handleChange(index, "tp", e.target.value)}
-                >
-                  <option value="Theory">Theory</option>
-                  <option value="Practical">Practical</option>
-                  <option value="Theory cum Practical">
-                    Theory cum Practical
-                  </option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Gate/Common</label>
-                <select
-                  value={course.gate_common}
-                  onChange={(e) =>
-                    handleChange(index, "gate_common", e.target.value)
-                  }
-                >
-                  <option value="Gate">Gate</option>
-                  <option value="Common">Common</option>
-                  <option value="Both">Both</option>
-                </select>
-              </div>
-              {course.gate_common === "Common" && (
-                <div className="form-group">
-                  <label>Common for Departments</label>
-                  <div
-                    className="dropdown-field"
-                    onClick={() => toggleDropdown(index)} // Toggle the specific dropdown
+      <div className="table-container">
+        <table className="course-table">
+          <thead>
+            <tr>
+              <th>Sno</th>
+              <th>Course Code</th>
+              <th>Course Name</th>
+              <th>Category</th>
+              <th>T/P</th>
+              <th>Gate/Common</th>
+              <th>Common Departments</th>
+              <th>Credits</th>
+              <th>LTP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {courses.map((course, index) => (
+              <tr key={index}>
+                <td>{course.sno}</td>
+                <td>
+                  <input
+                    type="text"
+                    value={course.course_code}
+                    onChange={(e) =>
+                      handleChange(index, "course_code", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    value={course.course_name}
+                    onChange={(e) =>
+                      handleChange(index, "course_name", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <select
+                    value={course.category}
+                    onChange={(e) =>
+                      handleChange(index, "category", e.target.value)
+                    }
                   >
-                    {course.common_dept.length > 0
-                      ? course.common_dept.join(", ")
-                      : "Select Departments"}
-                  </div>
-                  {dropdownOpen[index] && (
-                    <div className="checkbox-box">
-                      {departments.map((dept) => (
-                        <label key={dept} className="checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={course.common_dept.includes(dept)}
-                            onChange={() => handleCheckboxChange(index, dept)}
-                          />
-                          {dept}
-                        </label>
-                      ))}
-                    </div>
+                    <option value="">Select Category</option>
+                    <option value="HSMC">HSMC</option>
+                    <option value="BSC">BSC</option>
+                    <option value="ESC">ESC</option>
+                    <option value="PCC">PCC</option>
+                  </select>
+                </td>
+                <td>
+                  <select
+                    value={course.tp}
+                    onChange={(e) => handleChange(index, "tp", e.target.value)}
+                  >
+                    <option value="Theory">Theory</option>
+                    <option value="Practical">Practical</option>
+                    <option value="Theory cum Practical">
+                      Theory cum Practical
+                    </option>
+                  </select>
+                </td>
+                <td>
+                  <select
+                    value={course.gate_common}
+                    onChange={(e) =>
+                      handleChange(index, "gate_common", e.target.value)
+                    }
+                  >
+                    <option value="Gate">Gate</option>
+                    <option value="Common">Common</option>
+                    <option value="Both">Both</option>
+                  </select>
+                </td>
+                <td className="common-width">
+                  {course.gate_common === "Common" || course.gate_common === "Both" ? (
+                    <Select
+                      isMulti
+                      options={departments}
+                      value={departments.filter((dept) =>
+                        course.common_dept.includes(dept.value)
+                      )}
+                      onChange={(selectedOptions) =>
+                        handleChange(
+                          index,
+                          "common_dept",
+                          selectedOptions.map((option) => option.value)
+                        )
+                      }
+                      closeMenuOnSelect={false}
+                      styles={customStyles}
+                    />
+                  ) : (
+                    <span>Not Applicable</span>
                   )}
-                </div>
-              )}
-              <div className="form-group">
-                <label>Credits</label>
-                <input
-                  type="number"
-                  placeholder="Credits"
-                  value={course.credits}
-                  onChange={(e) =>
-                    handleChange(index, "credits", e.target.value)
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>LTP</label>
-                <input
-                  type="text"
-                  placeholder="LTP"
-                  value={course.ltp}
-                  onChange={(e) => handleChange(index, "ltp", e.target.value)}
-                />
-              </div>
-            </form>
-          </div>
-        ))}
-
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={course.credits}
+                    onChange={(e) =>
+                      handleChange(index, "credits", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    value={course.ltp}
+                    onChange={(e) =>
+                      handleChange(index, "ltp", e.target.value)
+                    }
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
         <div className="button-container">
-          <button className="add-course" type="button" onClick={addCourse}>
+          <button className="add-course" onClick={addCourse}>
             Add Course
           </button>
-          <button className="submit" type="submit" onClick={handleSubmit}>
+          <button className="submit" onClick={handleSubmit}>
             Submit
           </button>
         </div>

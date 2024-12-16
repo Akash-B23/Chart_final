@@ -6,7 +6,7 @@ select {
   font-size: 14px;
   height: 40px;
   line-height: 20px;
-  overflow-y: scroll;
+  overflow-y: auto;
   max-height: 200px;
   transition: background-color 0.3s ease;
   cursor: pointer;
@@ -24,11 +24,111 @@ select:placeholder-shown {
 
 select:focus {
   background-color: #444;
-  /* Light gray background on focus */
 }
 
-.select:focus {
-  background-color: #e0e0e0;
+table {
+  width: 100%;
+}
+
+.animate-border {
+  animation: highlightBorder 2s ease-in-out;
+}
+
+.highlight-dropdown {
+  border: 2px solid #007bff;
+  background-color: grey;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+/* Table Styling */
+.course-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.course-table th,
+.course-table td {
+  text-align: left;
+  padding: 10px;
+  border: 1px solid #444;
+}
+
+.course-table th {
+  background-color: #222;
+  color: #00aaff;
+  font-weight: bold;
+}
+
+.course-table td input,
+.course-table td select {
+  width: 100%;
+  /* Make inputs and selects occupy the full cell */
+  padding: 8px;
+  /* Maintain consistent padding */
+  font-size: 14px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #222;
+  color: #fff;
+  box-sizing: border-box;
+  /* Ensure borders and padding are included in width */
+}
+
+.course-table td {
+  position: relative;
+  /* Prevent overflow */
+  vertical-align: middle;
+  /* Align input fields vertically in the cell */
+  padding: 5px;
+  /* Adjust cell padding for consistency */
+}
+
+/* Semester Container */
+.semester-container {
+  background-color: #121212;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  margin: auto;
+  max-width: 1200px;
+}
+
+.semester-header {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* Button Styling */
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.button-container button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button-container button:hover {
+  opacity: 0.9;
+}
+
+.button-container button:first-child {
+  background-color: #00aaff;
+  color: #fff;
+}
+
+.button-container button:last-child {
+  background-color: #28a745;
+  color: #fff;
 }
 
 /* Keyframe Animation */
@@ -44,142 +144,25 @@ select:focus {
   }
 }
 
-.animate-border {
-  animation: highlightBorder 2s ease-in-out;
+/* Responsive Design */
+@media (max-width: 768px) {
+
+  .course-table th,
+  .course-table td {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .semester-header {
+    font-size: 20px;
+  }
+
+  .button-container {
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 
-.highlight-dropdown {
-  border: 2px solid #007bff;
-  background-color: grey;
-  box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
-  transition: all 0.3s ease;
-}
-
-/* Semester Container */
-.semester-container {
-  background-color: #121212;
-  color: #ffffff;
-  border-radius: 8px;
-  width: 100%;
-  margin: auto;
-}
-
-/* Semester Header */
-.semester-header {
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
-/* Form Container */
-.form-container {
-  padding: 20px;
-  background-color: #1f1f1f;
-  border-radius: 8px;
-}
-
-/* Course Header */
-.course-header {
-  text-align: left;
-  font-size: 25px;
-  color: #00aaff;
-  margin-bottom: 20px;
-}
-
-/* Form Grid */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-}
-
-/* Form Group */
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  margin-bottom: 5px;
-  font-size: 14px;
-}
-
-/* Input Field */
-.form-group input {
-  padding: 15px;
-  font-size: 14px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background-color: #222;
-  color: #fff;
-  transition: all 0.3s ease;
-}
-
-.form-group input::placeholder {
-  color: #a0a0a0;
-}
-
-.form-group input:focus {
-  border-color: #00aaff;
-  box-shadow: #00aaff;
-}
-
-/* Button Container */
-.button-container {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-  padding-inline-start: 5%;
-}
-
-/* Add Course and Submit Buttons */
-.add-course,
-.submit {
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.add-course {
-  background-color: #00aaff;
-  color: #fff;
-}
-
-.submit {
-  background-color: #28a745;
-  color: #fff;
-}
-
-/* Hover Effects for Buttons */
-.add-course:hover,
-.submit:hover {
-  opacity: 0.9;
-}
-
-.checkbox-box {
-  border: 1px solid #ccc;
-  padding: 10px;
-  max-height: 200px;
-  overflow-y: auto;
-  background-color: #1f1f1f;
-  border-radius: 5px;
-}
-
-.checkbox-label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-.dropdown-field {
-  cursor: pointer;
-  border: 1px solid #ccc;
-  padding: 5px;
-  background-color: #1f1f1f;
-  border-radius: 5px;
-}
-
-.dropdown-options {
-  margin-top: 5px;
+.common-width {
+  width: 175px;
 }
