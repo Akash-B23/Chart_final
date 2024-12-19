@@ -277,6 +277,10 @@ const CourseDetails = ({ department, regulation }) => {
                     <option value="BSC">BSC</option>
                     <option value="ESC">ESC</option>
                     <option value="PCC">PCC</option>
+                    <option value="MC">MC</option>
+                    <option value="EEC">EEC</option>
+                    <option value="PEC">PEC</option>
+                    <option value="OEC">OEC</option>
                   </select>
                 </td>
                 <td>
