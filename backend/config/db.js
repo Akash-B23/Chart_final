@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 const pool = new Pool({
   host: "localhost",
-  user: "dinesh",
-  password: "dinesh123",
-  database: "dinesh",
-  port: 5432,
+  user: "postgres",
+  password: "helloworld",
+  database: "Semester",
+  port: 5432,
 });
 
 pool

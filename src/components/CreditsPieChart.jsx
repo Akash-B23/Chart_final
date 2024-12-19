@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { Pie } from 'react-chartjs-2';
 import axios from 'axios';
@@ -87,10 +86,10 @@ const CreditsPieChart = () => {
 
     // Prepare pie chart data for semester-wise distribution
     const pieChartData = {
-        labels: Object.keys(semesterData),
+        labels: Object.keys(categoryMapping), // Use keys from categoryMapping as labels
         datasets: [
             {
-                data: Object.values(semesterData).map((courses) => courses.length),
+                data: Object.keys(categoryMapping).map((key) => categoryData[key]?.length || 0),
                 backgroundColor: [
                     '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#FF9F40',
                     '#9966FF', '#FFCD56', '#66BB6A', '#FF6F61', '#42A5F5',
@@ -101,6 +100,26 @@ const CreditsPieChart = () => {
                 ],
             },
         ],
+    };
+
+    const pieChartOptions = {
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        const categoryKey = context.label || 'Unknown';
+                        const categoryFullName = categoryMapping[categoryKey] || categoryKey;
+                        const dataset = context.dataset;
+                        const total = dataset.data.reduce((sum, value) => sum + value, 0);
+                        const value = dataset.data[context.dataIndex];
+                        const percentage = ((value / total) * 100).toFixed(2);
+                        return `${categoryFullName}: ${percentage}%`; // Display category name and percentage
+                    },
+                },
+            },
+        },
+        maintainAspectRatio: true,
+        responsive: true,
     };
 
     return (
@@ -127,12 +146,12 @@ const CreditsPieChart = () => {
             </div>
 
             {viewMode === 'chart' && semesterData && Object.keys(semesterData).length > 0 && (
-                <div style={{ textAlign: 'center', margin: '20px' }}>
-                    <Pie data={pieChartData} />
+                <div style={{ textAlign: 'center', margin: '20px', maxWidth: '600px', margin: 'auto' }}>
+                    <Pie data={pieChartData} options={pieChartOptions} />
                 </div>
             )}
 
-            {viewMode === 'chart' && (Object.keys(semesterData).length === 0) && (
+            {viewMode === 'chart' && Object.keys(semesterData).length === 0 && (
                 <p>No data available for the selected department.</p>
             )}
 
@@ -214,7 +233,7 @@ const CreditsPieChart = () => {
                                                 {course.course_name}
                                             </td>
                                             <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                                {course.semester || 'N/A'}
+                                                {course.semester}
                                             </td>
                                             <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                 {course.credits}
