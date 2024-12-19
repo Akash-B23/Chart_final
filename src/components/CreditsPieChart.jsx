@@ -1,18 +1,6 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useState, useRef } from 'react';
-import { Pie } from 'react-chartjs-2';
-import axios from 'axios';
-import {
-    Chart as ChartJS,
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    Title,
-    Tooltip,
-    Legend,
-} from 'chart.js';
-
-ChartJS.register(ArcElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 const CreditsPieChart = () => {
     const [departments] = useState([
@@ -32,131 +20,176 @@ const CreditsPieChart = () => {
         { id: 14, name: "CIVIL" },
     ]);
 
-    const [selectedDept, setSelectedDept] = useState('');
-    const [selectedSemester, setSelectedSemester] = useState('');
-    const [creditsData, setCreditsData] = useState([]);
-    const [viewMode, setViewMode] = useState('chart'); // Default to 'chart'
-    const chartRef = useRef(null);
+    const [selectedDept, setSelectedDept] = useState("");
+    const [semesterData, setSemesterData] = useState({});
+    const [categoryData, setCategoryData] = useState({});
+    const [error, setError] = useState("");
+
+    const categoryMapping = {
+        HSMC: 'Humanities & Social Science Courses (HSMC)',
+        BSC: 'Basic Science Courses (BSC)',
+        ESC: 'Engineering Science Courses (ESC)',
+        PCC: 'Program Core Courses (PCC)',
+        PEC: 'Professional Elective Courses (PEC)',
+        OEC: 'Open Elective Courses (OEC)',
+        EEC: 'Employability Enhancement Courses (EEC)',
+        MC: 'Mandatory Courses (MC)',
+    };
 
     useEffect(() => {
-        if (selectedDept && selectedSemester) {
-            fetchCredits(selectedDept, selectedSemester);
+        if (selectedDept) {
+            fetchSemesterData(selectedDept);
+            fetchCategoryData(selectedDept);
         }
-    }, [selectedDept, selectedSemester]);
+    }, [selectedDept]);
 
-    const fetchCredits = async (deptName, semester) => {
+    const fetchSemesterData = async (department) => {
         try {
-            const regulation = 'R21'; // Hardcoded for R21
-            const response = await axios.get('http://localhost:5000/api/courses', {
-                params: { department: deptName, semester: semester, regulation: regulation },
+            const regulation = "R21"; // Hardcoded regulation
+            const response = await axios.get("http://localhost:5000/api/courses/semester", {
+                params: { department, regulation },
             });
-            setCreditsData(response.data || []);
+            setSemesterData(response.data);
+            setError("");
         } catch (err) {
-            console.error('Error fetching credits:', err);
+            console.error(err);
+            setError(err.response?.data?.message || "Error fetching semester data");
+            setSemesterData({});
         }
     };
 
-    const handleViewChange = (mode) => {
-        setViewMode(mode);
+    const fetchCategoryData = async (department) => {
+        try {
+            const regulation = "R21"; // Hardcoded regulation
+            const response = await axios.get("http://localhost:5000/api/courses/category", {
+                params: { department, regulation },
+            });
+            console.log(response.data); // Log category data to inspect it
+            setCategoryData(response.data);
+            setError("");
+        } catch (err) {
+            console.error(err);
+            setError(err.response?.data?.message || "Error fetching category data");
+            setCategoryData({});
+        }
     };
 
-    // Prepare data for the Pie chart
-    const pieData = {
-        labels: creditsData.map((item) => item.category),
-        datasets: [
-            {
-                label: 'Credits',
-                data: creditsData.map((item) => item.credits),
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-                hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-            },
-        ],
-    };
 
     return (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-            <h1>Department Credits Overview</h1>
-            <div>
-                <select onChange={(e) => setSelectedDept(e.target.value)} value={selectedDept}>
-                    <option value="">Select a Department</option>
-                    {departments.map((dept) => (
-                        <option key={dept.id} value={dept.name}>
-                            {dept.name}
-                        </option>
+        <div style={{ padding: "20px", textAlign: "center" }}>
+            <h1>Department Courses Overview</h1>
+            <select onChange={(e) => setSelectedDept(e.target.value)} value={selectedDept}>
+                <option value="">Select a Department</option>
+                {departments.map((dept) => (
+                    <option key={dept.id} value={dept.name}>
+                        {dept.name}
+                    </option>
+                ))}
+            </select>
+
+            {error && <p style={{ color: "red" }}>{error}</p>}
+
+            {Object.keys(semesterData).length > 0 ? (
+                <div style={{ marginTop: "20px" }}>
+                    {/* Semester-wise tables */}
+                    {Object.entries(semesterData).map(([semester, courses]) => (
+                        <div key={semester} style={{ marginBottom: "20px" }}>
+                            <h2>Semester {semester}</h2>
+
+                            {courses.length > 0 ? (
+                                <table
+                                    style={{
+                                        margin: "10px auto",
+                                        borderCollapse: "collapse",
+                                        width: "80%",
+                                    }}
+                                >
+                                    <thead>
+                                        <tr>
+                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Code</th>
+                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Name</th>
+                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>Credits</th>
+                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>LTP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {courses.map((course, index) => (
+                                            <tr key={index}>
+                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                    {course.course_code}
+                                                </td>
+                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                    {course.course_name}
+                                                </td>
+                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                    {course.credits}
+                                                </td>
+                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                    {course.ltp}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p>No records available for Semester {semester}.</p>
+                            )}
+                        </div>
                     ))}
-                </select>
-
-                <select onChange={(e) => setSelectedSemester(e.target.value)} value={selectedSemester}>
-                    <option value="">Select a Semester</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                        <option key={sem} value={sem}>
-                            Semester {sem}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            <div style={{ margin: '20px 0' }}>
-                <button onClick={() => handleViewChange('chart')} disabled={viewMode === 'chart'}>
-                    View Chart
-                </button>
-                <button onClick={() => handleViewChange('table')} disabled={viewMode === 'table'}>
-                    View Table
-                </button>
-            </div>
-
-            {viewMode === 'chart' && creditsData.length > 0 && (
-                <div
-                    style={{
-                        width: '350px',
-                        height: '350px',
-                        margin: '20px auto',
-                        padding: '10px',
-                        border: '1px solid #ddd',
-                        borderRadius: '8px',
-                        backgroundColor: '#f9f9f9',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                    }}
-                >
-                    <Pie
-                        ref={chartRef}
-                        data={pieData}
-                        options={{
-                            maintainAspectRatio: false,
-                            responsive: true,
-                        }}
-                        style={{ width: '300px', height: '300px', margin: '0 auto' }}
-                    />
                 </div>
+            ) : (
+                selectedDept && <p>No semester data available for the selected department.</p>
             )}
 
-            {viewMode === 'table' && creditsData.length > 0 && (
-                <table style={{ margin: '20px auto', borderCollapse: 'collapse', width: '80%' }}>
-                    <thead>
-                        <tr>
-                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Course Code</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Course Name</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Category</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Credits</th>
-                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>LTP</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {creditsData.map((course, index) => (
-                            <tr key={index}>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{course.course_code}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{course.course_name}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{course.category}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{course.credits}</td>
-                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{course.ltp}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
-
-            {creditsData.length === 0 && selectedDept && selectedSemester && (
-                <p>No data available for the selected department and semester.</p>
+            {Object.keys(categoryData).length > 0 ? (
+                <div style={{ marginTop: "30px" }}>
+                    <h2>Category-wise Data</h2>
+                    {Object.entries(categoryData).map(([category, courses]) => (
+                        <div key={category} style={{ marginBottom: "20px" }}>
+                            <h3>{categoryMapping[category]}</h3>
+                            <table
+                                style={{
+                                    margin: "10px auto",
+                                    borderCollapse: "collapse",
+                                    width: "80%",
+                                }}
+                            >
+                                <thead>
+                                    <tr>
+                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Code</th>
+                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Name</th>
+                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Semester</th>
+                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Credits</th>
+                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>LTP</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {courses.map((course, index) => (
+                                        <tr key={index}>
+                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                {course.course_code}
+                                            </td>
+                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                {course.course_name}
+                                            </td>
+                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                {course.semester || 'N/A'} {/* Added default fallback for semester */}
+                                            </td>
+                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                {course.credits}
+                                            </td>
+                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                {course.ltp}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                selectedDept && <p>No category data available for the selected department.</p>
             )}
         </div>
     );
