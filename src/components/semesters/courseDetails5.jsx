@@ -262,6 +262,7 @@ const CourseDetails = ({ department, regulation }) => {
                     onChange={(e) =>
                       handleChange(index, "course_name", e.target.value)
                     }
+                    spellCheck = "true"
                   />
                 </td>
                 <td>
