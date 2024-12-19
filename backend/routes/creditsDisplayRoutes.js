@@ -1,137 +1,104 @@
+/* eslint-disable no-unused-vars */
 import express from 'express';
 import pool from '../config/db.js';
 
 const router = express.Router();
 
-// Endpoint to fetch aggregated credits data for charts
-router.get("/credits", async (req, res) => {
+// Endpoint to fetch semester-wise courses data for a department
+router.get("/courses/semester", async (req, res) => {
     try {
-        const department = req.query.department;
-        if (!department) {
-            return res.status(400).json({ message: "Missing department parameter" });
+        const { department, regulation } = req.query;
+        if (!department || !regulation) {
+            return res.status(400).json({ message: "Missing department or regulation parameter" });
         }
 
-        // Query to fetch credits and category for the selected department
+        // Query to fetch courses for the specified department and regulation, grouped by semester
         const result = await pool.query(
-            "SELECT credits, category FROM r21 WHERE department = $1",
-            [department]
+            `SELECT course_code, course_name, credits, ltp, semester
+            FROM courses
+            WHERE department = $1 AND regulation = $2
+            ORDER BY semester`,
+            [department, regulation]
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: "No courses found for the selected department" });
+            return res.status(404).json({ message: "No courses found for the selected department and regulation" });
         }
 
-        // Sum up all the credits for the selected department
-        const totalCredits = result.rows.reduce((sum, course) => sum + course.credits, 0);
-
-        // Calculate the percentage for each course credit and return the category as well
-        const creditsWithPercentage = result.rows.map(course => ({
-            category: course.category,
-            credits: course.credits,
-            percentage: ((course.credits / totalCredits) * 100).toFixed(2), // Calculate percentage
-        }));
-
-        res.json(creditsWithPercentage); // Return credits, category, and percentage
-    } catch (error) {
-        console.error("Error retrieving course credits:", error.message);
-        res.status(500).json({ message: "Error retrieving course credits" });
-    }
-});
-
-// Endpoint to fetch courses grouped by semester
-router.get("/courses/semester", async (req, res) => {
-    const { department, regulation } = req.query;
-
-    if (!department || !regulation) {
-        return res.status(400).json({ message: "Missing required query parameters: department or regulation" });
-    }
-
-    try {
-        const query = `
-        SELECT semester, course_code, course_name, credits, ltp
-        FROM courses
-        WHERE department = $1 AND regulation = $2
-        ORDER BY semester
-      `;
-        const values = [department, regulation];
-
-        const { rows } = await pool.query(query, values);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: "No courses found for the given department and regulation." });
-        }
-
-        // Grouping courses by semester
-        const groupedData = rows.reduce((acc, course) => {
-            if (!acc[course.semester]) {
-                acc[course.semester] = [];
+        // Organize courses data by semester
+        const semesterData = {};
+        result.rows.forEach(course => {
+            if (!semesterData[course.semester]) {
+                semesterData[course.semester] = [];
             }
-            acc[course.semester].push({
+            semesterData[course.semester].push({
                 course_code: course.course_code,
                 course_name: course.course_name,
                 credits: course.credits,
                 ltp: course.ltp,
             });
-            return acc;
-        }, {});
-
-        // Ensure all semesters are included, even those with no courses
-        const allSemesters = [1, 2, 3, 4, 5, 6, 7, 8];
-        allSemesters.forEach(semester => {
-            if (!groupedData[semester]) {
-                groupedData[semester] = [];
-            }
         });
 
-        res.status(200).json(groupedData);
+        res.json(semesterData); // Return the data grouped by semester
     } catch (error) {
-        console.error("Error fetching courses:", error.message);
-        res.status(500).json({ message: "Error fetching courses." });
+        console.error("Error fetching semester-wise courses:", error.message);
+        res.status(500).json({ message: "Error retrieving semester-wise courses" });
     }
 });
 
-// Endpoint to fetch courses grouped by category and include semester
+// Endpoint to fetch category-wise courses data for a department
 router.get("/courses/category", async (req, res) => {
-    const { department, regulation } = req.query;
-
-    if (!department || !regulation) {
-        return res.status(400).json({ message: "Missing required query parameters: department or regulation" });
-    }
-
     try {
-        const query = `
-        SELECT category, semester, course_code, course_name, credits, ltp
-        FROM courses
-        WHERE department = $1 AND regulation = $2
-        ORDER BY category, semester
-      `;
-        const values = [department, regulation];
-
-        const { rows } = await pool.query(query, values);
-
-        if (rows.length === 0) {
-            return res.status(404).json({ message: "No courses found for the given department and regulation." });
+        const { department, regulation } = req.query;
+        if (!department || !regulation) {
+            return res.status(400).json({ message: "Missing department or regulation parameter" });
         }
 
-        // Grouping courses by category and including semester data
-        const groupedData = rows.reduce((acc, course) => {
-            if (!acc[course.category]) {
-                acc[course.category] = [];
+        // Query to fetch courses categorized by their respective categories
+        const result = await pool.query(
+            `SELECT course_code, course_name, category, credits, ltp, semester
+            FROM courses
+            WHERE department = $1 AND regulation = $2
+            ORDER BY category, semester`,
+            [department, regulation]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "No courses found for the selected department and regulation" });
+        }
+
+        // Category mapping for more readable results
+        const categoryMapping = {
+            HSMC: 'Humanities & Social Science Courses (HSMC)',
+            BSC: 'Basic Science Courses (BSC)',
+            ESC: 'Engineering Science Courses (ESC)',
+            PCC: 'Program Core Courses (PCC)',
+            PEC: 'Professional Elective Courses (PEC)',
+            OEC: 'Open Elective Courses (OEC)',
+            EEC: 'Employability Enhancement Courses (EEC)',
+            MC: 'Mandatory Courses (MC)',
+        };
+
+        // Organize courses data by category
+        const categoryData = {};
+        result.rows.forEach(course => {
+            const categoryName = categoryMapping[course.category] || course.category;
+            if (!categoryData[course.category]) {
+                categoryData[course.category] = [];
             }
-            acc[course.category].push({
-                semester: course.semester, // Include semester here
+            categoryData[course.category].push({
                 course_code: course.course_code,
                 course_name: course.course_name,
                 credits: course.credits,
                 ltp: course.ltp,
+                semester: course.semester || 'N/A', // Provide fallback for missing semester
             });
-            return acc;
-        }, {});
+        });
 
-        res.status(200).json(groupedData);
+        res.json(categoryData); // Return the data grouped by category
     } catch (error) {
-        console.error("Error fetching courses:", error.message);
-        res.status(500).json({ message: "Error fetching courses." });
+        console.error("Error fetching category-wise courses:", error.message);
+        res.status(500).json({ message: "Error retrieving category-wise courses" });
     }
 });
 

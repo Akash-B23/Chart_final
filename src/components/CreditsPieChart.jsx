@@ -1,6 +1,18 @@
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import { Pie } from 'react-chartjs-2';
+import axios from 'axios';
+import {
+    Chart as ChartJS,
+    ArcElement,
+    CategoryScale,
+    LinearScale,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
 
 const CreditsPieChart = () => {
     const [departments] = useState([
@@ -20,10 +32,10 @@ const CreditsPieChart = () => {
         { id: 14, name: "CIVIL" },
     ]);
 
-    const [selectedDept, setSelectedDept] = useState("");
+    const [selectedDept, setSelectedDept] = useState('');
     const [semesterData, setSemesterData] = useState({});
     const [categoryData, setCategoryData] = useState({});
-    const [error, setError] = useState("");
+    const [viewMode, setViewMode] = useState('chart'); // Default to 'chart'
 
     const categoryMapping = {
         HSMC: 'Humanities & Social Science Courses (HSMC)',
@@ -50,10 +62,8 @@ const CreditsPieChart = () => {
                 params: { department, regulation },
             });
             setSemesterData(response.data);
-            setError("");
         } catch (err) {
             console.error(err);
-            setError(err.response?.data?.message || "Error fetching semester data");
             setSemesterData({});
         }
     };
@@ -64,67 +74,104 @@ const CreditsPieChart = () => {
             const response = await axios.get("http://localhost:5000/api/courses/category", {
                 params: { department, regulation },
             });
-            console.log(response.data); // Log category data to inspect it
             setCategoryData(response.data);
-            setError("");
         } catch (err) {
             console.error(err);
-            setError(err.response?.data?.message || "Error fetching category data");
             setCategoryData({});
         }
     };
 
+    const handleViewChange = (mode) => {
+        setViewMode(mode);
+    };
+
+    // Prepare pie chart data for semester-wise distribution
+    const pieChartData = {
+        labels: Object.keys(semesterData),
+        datasets: [
+            {
+                data: Object.values(semesterData).map((courses) => courses.length),
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#FF9F40',
+                    '#9966FF', '#FFCD56', '#66BB6A', '#FF6F61', '#42A5F5',
+                ],
+                hoverBackgroundColor: [
+                    '#FF4863', '#36A0D6', '#FFAC39', '#4BB0A2', '#FF8F3A',
+                    '#9961FF', '#FFD033', '#66A658', '#FF6F58', '#4296F1',
+                ],
+            },
+        ],
+    };
 
     return (
-        <div style={{ padding: "20px", textAlign: "center" }}>
+        <div style={{ padding: '20px', textAlign: 'center' }}>
             <h1>Department Courses Overview</h1>
-            <select onChange={(e) => setSelectedDept(e.target.value)} value={selectedDept}>
-                <option value="">Select a Department</option>
-                {departments.map((dept) => (
-                    <option key={dept.id} value={dept.name}>
-                        {dept.name}
-                    </option>
-                ))}
-            </select>
+            <div>
+                <select onChange={(e) => setSelectedDept(e.target.value)} value={selectedDept}>
+                    <option value="">Select a Department</option>
+                    {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                            {dept.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
 
-            {error && <p style={{ color: "red" }}>{error}</p>}
+            <div style={{ margin: '20px 0' }}>
+                <button onClick={() => handleViewChange('chart')} disabled={viewMode === 'chart'}>
+                    View Chart
+                </button>
+                <button onClick={() => handleViewChange('table')} disabled={viewMode === 'table'}>
+                    View Table
+                </button>
+            </div>
 
-            {Object.keys(semesterData).length > 0 ? (
-                <div style={{ marginTop: "20px" }}>
+            {viewMode === 'chart' && semesterData && Object.keys(semesterData).length > 0 && (
+                <div style={{ textAlign: 'center', margin: '20px' }}>
+                    <Pie data={pieChartData} />
+                </div>
+            )}
+
+            {viewMode === 'chart' && (Object.keys(semesterData).length === 0) && (
+                <p>No data available for the selected department.</p>
+            )}
+
+            {viewMode === 'table' && (
+                <div>
                     {/* Semester-wise tables */}
                     {Object.entries(semesterData).map(([semester, courses]) => (
-                        <div key={semester} style={{ marginBottom: "20px" }}>
+                        <div key={semester} style={{ marginBottom: '20px' }}>
                             <h2>Semester {semester}</h2>
 
                             {courses.length > 0 ? (
                                 <table
                                     style={{
-                                        margin: "10px auto",
-                                        borderCollapse: "collapse",
-                                        width: "80%",
+                                        margin: '10px auto',
+                                        borderCollapse: 'collapse',
+                                        width: '80%',
                                     }}
                                 >
                                     <thead>
                                         <tr>
-                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Code</th>
-                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Name</th>
-                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>Credits</th>
-                                            <th style={{ border: "1px solid #ddd", padding: "8px" }}>LTP</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Course Code</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Course Name</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Credits</th>
+                                            <th style={{ border: '1px solid #ddd', padding: '8px' }}>LTP</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {courses.map((course, index) => (
                                             <tr key={index}>
-                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                     {course.course_code}
                                                 </td>
-                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                     {course.course_name}
                                                 </td>
-                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                     {course.credits}
                                                 </td>
-                                                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                     {course.ltp}
                                                 </td>
                                             </tr>
@@ -136,49 +183,43 @@ const CreditsPieChart = () => {
                             )}
                         </div>
                     ))}
-                </div>
-            ) : (
-                selectedDept && <p>No semester data available for the selected department.</p>
-            )}
 
-            {Object.keys(categoryData).length > 0 ? (
-                <div style={{ marginTop: "30px" }}>
-                    <h2>Category-wise Data</h2>
+                    {/* Category-wise tables */}
                     {Object.entries(categoryData).map(([category, courses]) => (
-                        <div key={category} style={{ marginBottom: "20px" }}>
+                        <div key={category} style={{ marginBottom: '20px' }}>
                             <h3>{categoryMapping[category]}</h3>
                             <table
                                 style={{
-                                    margin: "10px auto",
-                                    borderCollapse: "collapse",
-                                    width: "80%",
+                                    margin: '10px auto',
+                                    borderCollapse: 'collapse',
+                                    width: '80%',
                                 }}
                             >
                                 <thead>
                                     <tr>
-                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Code</th>
-                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Course Name</th>
-                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Semester</th>
-                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>Credits</th>
-                                        <th style={{ border: "1px solid #ddd", padding: "8px" }}>LTP</th>
+                                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Course Code</th>
+                                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Course Name</th>
+                                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Semester</th>
+                                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>Credits</th>
+                                        <th style={{ border: '1px solid #ddd', padding: '8px' }}>LTP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {courses.map((course, index) => (
                                         <tr key={index}>
-                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                 {course.course_code}
                                             </td>
-                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                 {course.course_name}
                                             </td>
-                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                                                {course.semester || 'N/A'} {/* Added default fallback for semester */}
+                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                                                {course.semester || 'N/A'}
                                             </td>
-                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                 {course.credits}
                                             </td>
-                                            <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>
                                                 {course.ltp}
                                             </td>
                                         </tr>
@@ -188,8 +229,6 @@ const CreditsPieChart = () => {
                         </div>
                     ))}
                 </div>
-            ) : (
-                selectedDept && <p>No category data available for the selected department.</p>
             )}
         </div>
     );
